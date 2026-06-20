@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ReliefRoute</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="icon"           href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  
+  <!-- Bootstrap & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet"/>
+
+  <!-- Custom CSS -->
+  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+
+  <style>
+    /* Carousel fade */
+    .carousel-fade .carousel-item {
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    .carousel-fade .carousel-item.active {
+      opacity: 1;
+    }
+
+    /* Map styling */
+    .map-container, #map {
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+    .map-container,
+    #map {
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+    .leaflet-container {
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="{{ url_for('index') }}">
+        <i class="fas fa-ambulance"></i> ReliefRoute
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('index') }}">
+              <i class="fas fa-home me-1"></i> Home
+            </a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('disaster_map') }}">
+              <i class="fas fa-globe-americas me-1"></i> Disaster Map
+            </a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('news_page') }}">
+              <i class="fas fa-newspaper me-1"></i> Safety & News
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Carousel -->
+  <header id="hero" class="hero-section">
+    <div id="carouselHero" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
+      <div class="carousel-indicators">
+        {% for _ in images %}
+        <button type="button" data-bs-target="#carouselHero" data-bs-slide-to="{{ loop.index0 }}" 
+          {% if loop.first %}class="active" aria-current="true"{% endif %}
+          aria-label="Slide {{ loop.index }}">
+        </button>
+        {% endfor %}
+      </div>
+      <div class="carousel-inner h-100">
+        {% for img in images %}
+        <div class="carousel-item {% if loop.first %}active{% endif %} d-flex align-items-center h-100">
+          <img src="{{ url_for('static', filename='images/' ~ img) }}" class="d-block w-100 slide-img" alt="Slide {{ loop.index }}" loading="lazy" decoding="async">
+          <div class="carousel-caption d-none d-md-block">
+            <h1 class="display-4">Disaster-Ready Routing</h1>
+            <p class="lead">Empowering responders with precision routes</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#carouselHero" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#carouselHero" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Why ReliefRoute -->
+  <section class="py-5 bg-light">
+    <div class="container text-center">
+      <h2 class="mb-3">Why ReliefRoute?</h2>
+      <p class="lead mb-5">
+        ReliefRoute empowers emergency responders to find the fastest, safest paths in the wake of a disaster.
+        Upload your delivery points, tune your fleet settings, and let our engine calculate precision-optimized routes in seconds.
+      </p>
+
+      <div class="row mb-5">
+        <div class="col-md-4">
+          <i class="fas fa-file-upload fa-2x text-primary mb-2"></i>
+          <h5>1. Upload Your Data</h5>
+          <p>Upload a CSV file or manually select destination points on the map.</p>
+        </div>
+        <div class="col-md-4">
+          <i class="fas fa-cogs fa-2x text-primary mb-2"></i>
+          <h5>2. Configure Your Fleet</h5>
+          <p>Set vehicle counts, capacities, time windows and service durations.</p>
+        </div>
+        <div class="col-md-4">
+          <i class="fas fa-route fa-2x text-primary mb-2"></i>
+          <h5>3. Get Optimized Routes</h5>
+          <p>Our solver returns the most efficient dispatch plan in moments.</p>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-3 col-sm-6">
+          <div class="card h-100 text-center p-3 border-0 shadow-sm">
+            <i class="fas fa-globe fa-2x text-primary mb-2"></i>
+            <h6>Disaster Overlays</h6>
+            <small>Visualize floods, fires, and roadblocks on your map.</small>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="card h-100 text-center p-3 border-0 shadow-sm">
+            <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+            <h6>Time-Window Support</h6>
+            <small>Honor delivery start/end times for critical supplies.</small>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="card h-100 text-center p-3 border-0 shadow-sm">
+            <i class="fas fa-shield-alt fa-2x text-primary mb-2"></i>
+            <h6>Safety-First Routing</h6>
+            <small>Avoid known hazards; prioritize safer roads.</small>
+          </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+          <div class="card h-100 text-center p-3 border-0 shadow-sm">
+            <i class="fas fa-wifi fa-2x text-primary mb-2"></i>
+            <h6>Live Updates</h6>
+            <small>Re-optimize on the fly as conditions change.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Config + Map Row -->
+  <main class="container my-5">
+    <div class="row g-4 mb-5">
+      <!-- Form Column -->
+      <div class="col-lg-4">
+        <form method="POST" enctype="multipart/form-data" class="card p-4 shadow-sm" autocomplete="off">
+          <h5 class="mb-3 text-primary">Configuration</h5>
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for cat, msg in messages %}
+              <div class="alert alert-{{ cat }} small">{{ msg }}</div>
+            {% endfor %}
+          {% endwith %}
+
+          <input name="ors_key" class="form-control mb-2" placeholder="ORS API Key">
+          <input name="csv_file" type="file" class="form-control mb-2" accept=".csv">
+
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <input name="depot_lat" id="depot_lat" class="form-control" placeholder="Depot Lat" required>
+            </div>
+            <div class="col">
+              <input name="depot_lon" id="depot_lon" class="form-control" placeholder="Depot Lon" required>
+            </div>
+          </div>
+          <button type="button" id="select-depot" class="btn btn-outline-primary w-100 mb-2">
+            Select Depot on Map
+          </button>
+
+          <div id="delivery-points-list" class="mb-2">
+            <h6>Selected Delivery Points</h6>
+            <div id="delivery-points"></div>
+          </div>
+          <input type="hidden" name="delivery_points" id="delivery_points">
+          <button type="button" id="add-delivery" class="btn btn-outline-secondary w-100 mb-2">
+            Add Delivery Point
+          </button>
+          <button type="button" id="clear-delivery" class="btn btn-outline-danger w-100 mb-2">
+            Clear Points
+          </button>
+          <button type="button" id="clear-form" class="btn btn-outline-warning w-100 mb-3">
+            Clear Form
+          </button>
+
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <input name="num_vehicles" type="number" class="form-control" placeholder="Vehicles" min="1" required>
+            </div>
+            <div class="col">
+              <input name="capacity" type="number" class="form-control" placeholder="Capacity" min="1" required>
+            </div>
+          </div>
+          <div class="row g-2 mb-2">
+            <div class="col">
+              <input name="service_time" type="number" class="form-control" placeholder="Service Time (s)" min="1" required>
+            </div>
+            <div class="col">
+              <input name="start_time" type="number" class="form-control" placeholder="Start (Unix)" required>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              <input name="end_time" type="number" class="form-control" placeholder="End (Unix)" required>
+            </div>
+            <div class="col">
+              <button type="submit" class="btn btn-primary w-100">Optimize</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Map Column -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body p-0">
+            {% if result %}
+            <div class="map-container mb-3">
+              {{ map_html|safe }}
+            </div>
+            {% else %}
+            <div id="map"></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result Tables -->
+    {% if result %}
+    <section id="data" class="mb-5">
+      <h4 class="text-primary mb-3">📊 Data View</h4>
+      <div class="table-responsive mb-4">
+        <h5>Delivery Locations</h5>
+        {{ overall_table|safe }}
+      </div>
+      {% for title, table in schedules %}
+      <div class="table-responsive mb-4">
+        <h5>{{ title }}</h5>
+        {{ table|safe }}
+      </div>
+      {% endfor %}
+      <div class="table-responsive mb-4">
+        <h5>Vehicle Summary</h5>
+        {{ vehicle_summary|safe }}
+      </div>
+    </section>
+    {% endif %}
+
+    <!-- News -->
+    <section id="news" class="mb-5">
+      <ul class="list-group">
+        {% for item in news %}
+        <li class="list-group-item">{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light pt-5 pb-4">
+    <div class="container">
+      <div class="row gy-4">
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Quick Links</h6>
+          <ul class="list-unstyled">
+            <li><a href="{{ url_for('index') }}" class="text-light">Home</a></li>
+            <li><a href="{{ url_for('disaster_map') }}" class="text-light">Disaster Map</a></li>
+            <li><a href="{{ url_for('news_page') }}" class="text-light">Safety & News</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Contact</h6>
+          <p class="small mb-1"><i class="fas fa-map-marker-alt me-1"></i> NIT Puducherry, Puducherry, India</p>
+          <p class="small mb-1"><i class="fas fa-phone-alt me-1"></i> +91 8102460089</p>
+          <p class="small mb-3"><i class="fas fa-envelope me-1"></i> support@reliefroute.org</p>
+          <div>
+            <a href="#" class="text-light me-3"><i class="fab fa-twitter fa-lg"></i></a>
+            <a href="#" class="text-light me-3"><i class="fab fa-facebook fa-lg"></i></a>
+            <a href="#" class="text-light"><i class="fab fa-linkedin fa-lg"></i></a>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Stay Updated</h6>
+          <p class="small">Subscribe to our newsletter for the latest in disaster routing.</p>
+          <form class="d-flex">
+            <input type="email" class="form-control form-control-sm me-2" placeholder="Your email" required>
+            <button class="btn btn-primary btn-sm">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <hr class="border-secondary">
+      <div class="text-center small">© 2025 ReliefRoute Inc. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" defer></script>
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+  <script>
+    window.isResult = {{ result|tojson }};
+  </script>
+</body>
+</html>

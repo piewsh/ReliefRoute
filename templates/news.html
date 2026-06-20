@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Safety Protocols & News – ReliefRoute</title>
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <link rel="icon"           href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet">
+  <!-- Leaflet CSS (for map, if needed elsewhere) -->
+  <link href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" rel="stylesheet"/>
+
+  <!-- Custom CSS -->
+  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      background: #f4f6f9;
+      color: #333;
+    }
+    main {
+      flex: 1 0 auto;
+    }
+    .navbar {
+      background: #ffffff;
+    }
+    .navbar-brand .fa-ambulance {
+      color: #007bff;
+    }
+    header.page-header {
+      background: linear-gradient(135deg, #007bff 0%, #00d4ff 100%);
+      color: #fff;
+      padding: 4rem 0;
+      text-align: center;
+    }
+    .card-protocol, .news-card {
+      border: none;
+      border-radius: 1rem;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      background: #fff;
+    }
+    .card-protocol:hover, .news-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .protocol-icon {
+      font-size: 1.75rem;
+      color: #007bff;
+    }
+    .protocol-header {
+      font-size: 1.25rem;
+      margin-bottom: .5rem;
+      font-weight: 600;
+    }
+    .footer {
+      background: #343a40;
+      color: #adb5bd;
+      flex-shrink: 0;
+    }
+    .footer a {
+      color: #adb5bd;
+      text-decoration: none;
+    }
+    .footer a:hover {
+      color: #fff;
+    }
+    /* Enhanced Styles */
+    .section-header {
+      color: #007bff;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .avalanche .protocol-icon {
+      color: #4682B4; /* Steel blue for Avalanche */
+    }
+    .heatwave .protocol-icon {
+      color: #DC143C; /* Crimson for Heatwave */
+    }
+    .flood .protocol-icon {
+      color: #1E90FF; /* Dodger blue for Flood */
+    }
+    .hurricane .protocol-icon {
+      color: #2F4F4F; /* Dark slate gray for Hurricane */
+    }
+    .landslide .protocol-icon {
+      color: #8B4513; /* Saddle brown for Landslide */
+    }
+    .blizzard .protocol-icon {
+      color: #4169E1; /* Royal blue for Blizzard */
+    }
+    .cyclone .protocol-icon {
+      color: #008080; /* Teal for Cyclone */
+    }
+    .tsunami .protocol-icon {
+      color: #000080; /* Navy for Tsunami */
+    }
+    .volcano .protocol-icon {
+      color: #FF0000; /* Red for Volcano */
+    }
+    .earthquake .protocol-icon {
+      color: #DAA520; /* Goldenrod for Earthquake */
+    }
+    .drought .protocol-icon {
+      color: #8A360F; /* Darker brown for Drought */
+    }
+    .tornado .protocol-icon {
+      color: #800080; /* Purple for Tornado */
+    }
+    .card-protocol ul {
+      line-height: 1.6;
+    }
+    .news-card p {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="{{ url_for('index') }}">
+        <i class="fas fa-ambulance"></i> ReliefRoute
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="nav">
+        <ul class="navbar-nav ms-auto align-items-center">
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('index') }}">
+              <i class="fas fa-home me-1"></i> Home
+            </a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('disaster_map') }}">
+              <i class="fas fa-globe-americas me-1"></i> Disaster Map
+            </a>
+          </li>
+          <li class="nav-item mx-2">
+            <a class="nav-link text-uppercase fw-semibold" href="{{ url_for('news_page') }}">
+              <i class="fas fa-newspaper me-1"></i> Safety & News
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="container">
+      <h1 class="display-5 fw-bold">Safety Protocols & Latest News</h1>
+      <p class="lead">Be prepared. Stay safe. Stay informed.</p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container my-5">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Safety Protocols -->
+    <h2 class="section-header">Safety Protocols for Disaster Prevention</h2>
+    <div class="row g-4">
+      <!-- Avalanche -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 avalanche">
+            <i class="fas fa-mountain protocol-icon me-3"></i>
+            <div class="protocol-header">Avalanche</div>
+          </div>
+          <ul class="ps-4">
+            <li>Avoid areas prone to avalanches during high-risk times.</li>
+            <li>Carry transceivers, probes, and shovels.</li>
+            <li>Travel in groups; watch out for each other.</li>
+            <li>Heed warning signs: recent snowfall, wind-loading.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Heatwave -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 heatwave">
+            <i class="fas fa-sun protocol-icon me-3"></i>
+            <div class="protocol-header">Heatwave</div>
+          </div>
+          <ul class="ps-4">
+            <li>Stay hydrated; avoid peak sun hours.</li>
+            <li>Use fans or AC to stay cool.</li>
+            <li>Check on elderly and children.</li>
+            <li>Wear lightweight, light-colored clothing.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Flood -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 flood">
+            <i class="fas fa-water protocol-icon me-3"></i>
+            <div class="protocol-header">Flood</div>
+          </div>
+          <ul class="ps-4">
+            <li>Evacuate to higher ground if needed.</li>
+            <li>Never walk or drive through floodwaters.</li>
+            <li>Shut off utilities when instructed.</li>
+            <li>Keep an emergency flood kit ready.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Hurricane -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 hurricane">
+            <i class="fas fa-wind protocol-icon me-3"></i>
+            <div class="protocol-header">Hurricane</div>
+          </div>
+          <ul class="ps-4">
+            <li>Follow local evacuation orders.</li>
+            <li>Board up windows; secure outdoor items.</li>
+            <li>Stay indoors during the storm.</li>
+            <li>Have a family communication plan.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Landslide -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 landslide">
+            <i class="fas fa-mountain-city protocol-icon me-3"></i>
+            <div class="protocol-header">Landslide</div>
+          </div>
+          <ul class="ps-4">
+            <li>Avoid vulnerable slopes during heavy rain.</li>
+            <li>Watch for cracks or unusual sounds.</li>
+            <li>Evacuate if authorities advise.</li>
+            <li>Keep emergency supplies ready.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Blizzard -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 blizzard">
+            <i class="fas fa-snowflake protocol-icon me-3"></i>
+            <div class="protocol-header">Blizzard</div>
+          </div>
+          <ul class="ps-4">
+            <li>Stay home; avoid travel.</li>
+            <li>Stock food, water, blankets.</li>
+            <li>Dress in warm layers if you go out.</li>
+            <li>Watch for frostbite and hypothermia.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Cyclone -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 cyclone">
+            <i class="fas fa-tornado protocol-icon me-3"></i>
+            <div class="protocol-header">Cyclone</div>
+          </div>
+          <ul class="ps-4">
+            <li>Evacuate if advised by authorities.</li>
+            <li>Secure loose objects and reinforce windows.</li>
+            <li>Stay indoors during the storm.</li>
+            <li>Listen to reliable weather updates.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tsunami -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 tsunami">
+            <i class="fas fa-water protocol-icon me-3"></i>
+            <div class="protocol-header">Tsunami</div>
+          </div>
+          <ul class="ps-4">
+            <li>Evacuate immediately if in a zone.</li>
+            <li>Move inland or to higher ground.</li>
+            <li>Stay away from coasts and low areas.</li>
+            <li>Follow official emergency alerts.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Volcano -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 volcano">
+            <i class="fas fa-fire protocol-icon me-3"></i>
+            <div class="protocol-header">Volcano</div>
+          </div>
+          <ul class="ps-4">
+            <li>Follow evacuation orders promptly.</li>
+            <li>Stay indoors; seal windows/doors.</li>
+            <li>Wear masks against ash inhalation.</li>
+            <li>Monitor official volcanic updates.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Earthquake -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 earthquake">
+            <i class="fas fa-shield-alt protocol-icon me-3"></i>
+            <div class="protocol-header">Earthquake</div>
+          </div>
+          <ul class="ps-4">
+            <li>Drop, cover, and hold on.</li>
+            <li>Stay away from windows and heavy objects.</li>
+            <li>Have an emergency kit ready.</li>
+            <li>Identify safe spots in each room.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Drought -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 drought">
+            <i class="fas fa-tint protocol-icon me-3"></i>
+            <div class="protocol-header">Drought</div>
+          </div>
+          <ul class="ps-4">
+            <li>Fix leaks and reduce water use.</li>
+            <li>Adhere to burn and water restrictions.</li>
+            <li>Plant drought-resistant vegetation.</li>
+            <li>Monitor and report water issues.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tornado -->
+      <div class="col-md-4">
+        <div class="card card-protocol h-100 p-3">
+          <div class="d-flex align-items-center mb-2 tornado">
+            <i class="fas fa-wind protocol-icon me-3"></i>
+            <div class="protocol-header">Tornado</div>
+          </div>
+          <ul class="ps-4">
+            <li>Shelter in a sturdy building or underground.</li>
+            <li>Stay away from windows and doors.</li>
+            <li>If outdoors, lie flat in a low area.</li>
+            <li>Have a household tornado plan.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Latest Disaster News -->
+    <h2 class="section-header mt-5">Latest Disaster News</h2>
+    <div class="row g-4">
+      {% for article in articles %}
+        <div class="col-md-6">
+          <div class="card news-card h-100 p-3">
+            <h5>{{ article.title }}</h5>
+            <p class="text-muted">Source: {{ article.source }} | Published: {{ article.published_at }}</p>
+            <p>Author: {{ article.author }}</p>
+            <a href="{{ article.url }}" target="_blank" class="btn btn-primary btn-sm">Read More</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-light pt-5 pb-4">
+    <div class="container">
+      <div class="row gy-4">
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Quick Links</h6>
+          <ul class="list-unstyled">
+            <li><a href="{{ url_for('index') }}" class="text-light">Home</a></li>
+            <li><a href="{{ url_for('disaster_map') }}" class="text-light">Disaster Map</a></li>
+            <li><a href="{{ url_for('news_page') }}" class="text-light">Safety & News</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Contact</h6>
+          <p class="small mb-1"><i class="fas fa-map-marker-alt me-1"></i> NIT Puducherry, Puducherry, India</p>
+          <p class="small mb-1"><i class="fas fa-phone-alt me-1"></i> +91 8102460089</p>
+          <p class="small mb-3"><i class="fas fa-envelope me-1"></i> support@reliefroute.org</p>
+          <div>
+            <a href="#" class="text-light me-3"><i class="fab fa-twitter fa-lg"></i></a>
+            <a href="#" class="text-light me-3"><i class="fab fa-facebook fa-lg"></i></a>
+            <a href="#" class="text-light"><i class="fab fa-linkedin fa-lg"></i></a>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-uppercase">Stay Updated</h6>
+          <p class="small">Subscribe to our newsletter for the latest in disaster routing.</p>
+          <form class="d-flex">
+            <input type="email" class="form-control form-control-sm me-2" placeholder="Your email" required>
+            <button class="btn btn-primary btn-sm">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <hr class="border-secondary">
+      <div class="text-center small">© 2025 ReliefRoute Inc. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" defer></script>
+</body>
+</html>

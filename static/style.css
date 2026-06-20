@@ -1,0 +1,131 @@
+/* Base */
+body {
+  background: #f2f4f8;
+  color: #222;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+}
+
+.navbar-brand {
+  font-size: 1.75rem;
+}
+
+/* Hero */
+.hero-section {
+  position: relative;
+  height: 70vh;
+  overflow: hidden;
+}
+
+.carousel-item {
+  position: relative;
+}
+
+.slide-img {
+  width: 100%;
+  height: 70vh;
+  object-fit: cover;
+  display: block;
+}
+
+.img-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 70vh;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1;
+}
+
+.carousel-caption {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  text-align: center;
+}
+
+.carousel-caption h1,
+.carousel-caption p {
+  font-family: 'Poppins', sans-serif;
+  color: #ffffff;
+  text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+  margin: 0;
+}
+
+.carousel-caption h1 {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+}
+
+.carousel-caption p {
+  font-size: 1.5rem;
+  opacity: 1;
+}
+
+/* Cards & forms */
+.card {
+  border-radius: .75rem;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  transition: transform .2s;
+}
+.card:hover {
+  transform: translateY(-5px);
+}
+.form-control {
+  border-radius: .5rem;
+}
+
+/* Map container */
+.map-container, .ratio.ratio-4x3 {
+  border: 3px solid #007bff;
+  border-radius: .75rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Tables */
+.table-striped th {
+  background: #007bff;
+  color: #fff;
+}
+.table th,
+.table td {
+  text-align: center;
+  vertical-align: middle;
+  padding: .75rem .5rem;
+}
+
+/* Delivery list items */
+.delivery-point {
+  background: #f8f9fa;
+  padding: .5rem;
+  border-radius: .5rem;
+}
+
+/* Navbar underline effect */
+.navbar-nav .nav-link {
+  position: relative;
+  padding: .5rem 1rem;
+  font-size: 1rem;
+  transition: color .2s ease, transform .2s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.navbar-nav .nav-link::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 2px;
+  background: #007bff;
+  bottom: 0;
+  left: 50%;
+  transition: width .3s ease, left .3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #007bff;
+  transform: translateY(-2px);
+}
+
+.navbar-nav .nav-link:hover::after {
+  width: 100%;
+  left: 0;
+}
